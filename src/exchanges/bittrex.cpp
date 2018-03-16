@@ -38,7 +38,7 @@ quote_t getQuote(Parameters &params)
   std::string x;
 
   x += "/api/v1.1/public/getticker?market=";
-  x += "USDT-BTC";
+  x += "BTC-VTC";
   //params.leg2.c_str();
 
   unique_json root {exchange.getRequest(x)};
@@ -56,8 +56,8 @@ double getAvail(Parameters &params, std::string currency)
 {
   std::string cur_str;
   cur_str += "currency=";
-  if (currency.compare("USD")==0){
-    cur_str += "USDT";
+  if (currency.compare("BTC")==0){
+    cur_str += "BTC";
   }
   else {
     cur_str += currency.c_str();
@@ -76,7 +76,7 @@ std::string sendLongOrder(Parameters& params, std::string direction, double quan
   *params.logFile << "<Bittrex> Trying to send a \"" << direction << "\" limit order: "
                   << std::setprecision(8) << quantity << " @ $"
                   << std::setprecision(8) << price << "...\n";
-  std::string pair = "USDT-BTC";
+  std::string pair = "BTC-VTC";
   std::string type = direction;
   std::string pricelimit = std::to_string(price);
   std::string volume = std::to_string(quantity);
@@ -98,7 +98,7 @@ std::string sendShortOrder(Parameters& params, std::string direction, double qua
   *params.logFile << "<Bittrex> Trying to send a \"" << direction << "\" limit order: "
                   << std::setprecision(8) << quantity << " @ $"
                   << std::setprecision(8) << price << "...\n";
-  std::string pair = "USDT-BTC";
+  std::string pair = "BTC-VTC";
   std::string pricelimit = std::to_string(price);
   std::string volume = std::to_string(quantity);
   std::string options = "market=" + pair + "&quantity=" + volume + "&rate=" + pricelimit;
@@ -116,7 +116,7 @@ std::string sendOrder(Parameters& params, std::string direction, double quantity
                   << std::setprecision(6) << quantity << "@$"
                   << std::setprecision(2) << price << "...\n";
   std::ostringstream oss;
-  oss << "\"symbol\":\"btcusd\", \"amount\":\"" << quantity << "\", \"price\":\"" << price << "\", \"exchange\":\"bitfinex\", \"side\":\"" << direction << "\", \"type\":\"limit\"";
+  oss << "\"symbol\":\"VTCBTC\", \"amount\":\"" << quantity << "\", \"price\":\"" << price << "\", \"exchange\":\"bitfinex\", \"side\":\"" << direction << "\", \"type\":\"limit\"";
   std::string options = oss.str();
   unique_json root { authRequest(params, "/v1/order/new", options) };
 
@@ -128,7 +128,7 @@ std::string sendOrder(Parameters& params, std::string direction, double quantity
 bool isOrderComplete(Parameters& params, std::string orderId)
 {
   //TODO Build a real currency string for options here (or outside?)
-  unique_json root { authRequest(params, "/api/v1.1/market/getopenorders","market=USDT-BTC")};
+  unique_json root { authRequest(params, "/api/v1.1/market/getopenorders","market=BTC-VTC")};
   auto res = json_object_get(root.get(), "result");
   // loop through the array to check orders
   std::string uuid;
@@ -154,14 +154,14 @@ bool isOrderComplete(Parameters& params, std::string orderId)
 }
 
 double getActivePos(Parameters& params) {
-    return getAvail(params, "BTC");
+    return getAvail(params, "VTC");
 }
 
 double getLimitPrice(Parameters& params, double volume, bool isBid) {
   // takes a quantity we want and if its a bid or not
   auto &exchange  = queryHandle(params);
   //TODO build a real URI string here
-  unique_json root { exchange.getRequest("/api/v1.1/public/getorderbook?market=USDT-BTC&type=both") };
+  unique_json root { exchange.getRequest("/api/v1.1/public/getorderbook?market=BTC-VTC&type=both") };
   auto bidask  = json_object_get(json_object_get(root.get(),"result"),isBid ? "buy" : "sell");
     // loop on volume
   *params.logFile << "<Bittrex> Looking for a limit price to fill "
@@ -238,12 +238,12 @@ void testBittrex(){
     //std::cout << "Current value LEG1_LEG2 bid: " << getQuote(params).bid() << std::endl;
     //std::cout << "Current value LEG1_LEG2 ask: " << getQuote(params).ask() << std::endl;
     //std::cout << "Current balance XMR: " << getAvail(params, "XMR") << std::endl;
-    //std::cout << "Current balance USD: " << getAvail(params, "USD")<< std::endl;
-    //std::cout << "Current balance ETH: " << getAvail(params, "ETH")<< std::endl;
     //std::cout << "Current balance BTC: " << getAvail(params, "BTC")<< std::endl;
+    //std::cout << "Current balance ETH: " << getAvail(params, "ETH")<< std::endl;
+    //std::cout << "Current balance VTC: " << getAvail(params, "VTC")<< std::endl;
     //std::cout << "current bid limit price for 10 units: " << getLimitPrice(params, 10.0, true) << std::endl;
     //std::cout << "Current ask limit price for 10 units: " << getLimitPrice(params, 10.0, false) << std::endl;
-    //std::cout << "Sending buy order for 0.01 XMR @ $100 USD - TXID: " << std::endl;
+    //std::cout << "Sending buy order for 0.01 XMR @ $100 BTC - TXID: " << std::endl;
     //orderId = sendLongOrder(params, "buy", 0.01, 100);
     //std::cout << orderId << std::endl;
     ///// if you don't wait bittrex won't recognize order for iscomplete
@@ -253,7 +253,7 @@ void testBittrex(){
     // TODO: Test sell orders, really should work though.
     //std::cout << orderId << std::endl;
     //std::cout << "Buy order is complete: " << isOrderComplete(params, orderId) << std::endl;
-    //std::cout << "Sending sell order for 0.01 XMR @ 5000 USD - TXID: " << std::endl ;
+    //std::cout << "Sending sell order for 0.01 XMR @ 5000 BTC - TXID: " << std::endl ;
     //orderId = sendLongOrder(params, "sell", 0.01, 5000);
     //std:: cout << orderId << std::endl;
     //std::cout << "Sell order is complete: " << isOrderComplete(params, orderId) << std::endl;

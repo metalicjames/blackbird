@@ -34,17 +34,17 @@ static json_t* checkResponse(std::ostream &logFile, json_t *root)
 }
 
 
-// We use ETH/BTC as there is no USD on Poloniex
-// TODO We could show BTC/USDT
+// We use ETH/VTC as there is no BTC on Poloniex
+// TODO We could show VTC/BTC
 quote_t getQuote(Parameters &params)
 {
   auto &exchange = queryHandle(params);
   unique_json root { exchange.getRequest("/public?command=returnTicker") };
 
-  const char *quote = json_string_value(json_object_get(json_object_get(root.get(), "USDT_BTC"), "highestBid"));
+  const char *quote = json_string_value(json_object_get(json_object_get(root.get(), "BTC_VTC"), "highestBid"));
   auto bidValue = quote ? std::stod(quote) : 0.0;
 
-  quote = json_string_value(json_object_get(json_object_get(root.get(), "USDT_BTC"), "lowestAsk"));
+  quote = json_string_value(json_object_get(json_object_get(root.get(), "BTC_VTC"), "lowestAsk"));
   auto askValue = quote ? std::stod(quote) : 0.0;
 
   return std::make_pair(bidValue, askValue);
@@ -54,7 +54,7 @@ double getAvail(Parameters &params, std::string currency)
 {
   std::transform(begin(currency), end(currency), begin(currency), ::toupper);
   std::string options = "account=exchange";
-  if (currency.compare("USD")==0) {
+  if (currency.compare("BTC")==0) {
     currency += "T";
   }
   unique_json root { authRequest(params, "returnAvailableAccountBalances", options) };
@@ -68,7 +68,7 @@ std::string sendLongOrder(Parameters& params, std::string direction, double quan
     return "0";
     }
   //TODO: Real currency string
-  std::string options = "currencyPair=USDT_BTC&rate=";
+  std::string options = "currencyPair=BTC_VTC&rate=";
   std::string volume = std::to_string(quantity);
   std::string pricelimit = std::to_string(price);
   options += pricelimit + "&amount=" + volume; 
@@ -78,13 +78,23 @@ std::string sendLongOrder(Parameters& params, std::string direction, double quan
 }
 
 std::string sendShortOrder(Parameters& params, std::string direction, double quantity, double price) {
-  // TODO
-  return "0";
+  if (direction.compare("buy") != 0 && direction.compare("sell") != 0) {
+    *params.logFile  << "<Poloniex> Error: Neither \"buy\" nor \"sell\" selected" << std::endl;
+    return "0";
+    }
+  //TODO: Real currency string
+  std::string options = "currencyPair=BTC_VTC&rate=";
+  std::string volume = std::to_string(quantity);
+  std::string pricelimit = std::to_string(price);
+  options += pricelimit + "&amount=" + volume; 
+  unique_json root { authRequest(params, direction.c_str(), options) };
+  std::string txid = json_string_value(json_object_get(root.get(),"orderNumber"));
+  return txid;
 }
 
 bool isOrderComplete(Parameters& params, std::string orderId)
 {
-  unique_json root { authRequest(params, "returnOpenOrders", "currencyPair=USDT_BTC") };
+  unique_json root { authRequest(params, "returnOpenOrders", "currencyPair=BTC_VTC") };
   auto n = json_array_size(root.get());
   while (n --> 0)
   {
@@ -115,14 +125,14 @@ double getActivePos(Parameters& params) {
   // }
   // return activeSize;
 
-  return getAvail(params, "BTC");
+  return getAvail(params, "VTC");
 }
 
 double getLimitPrice(Parameters& params, double volume, bool isBid) {
   auto &exchange = queryHandle(params);
   // TODO: build real curr string
   //std::string uri = "/public?command=returnOrderBook&currencyPair=";
-  unique_json root { exchange.getRequest("/public?command=returnOrderBook&currencyPair=USDT_BTC") };
+  unique_json root { exchange.getRequest("/public?command=returnOrderBook&currencyPair=BTC_VTC") };
   auto bidask  = json_object_get(root.get(),isBid ? "bids" : "asks");
   *params.logFile << "<Poloniex> Looking for a limit price to fill "
                   << std::setprecision(8) << fabs(volume) << " Legx...\n";
